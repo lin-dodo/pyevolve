@@ -249,13 +249,13 @@ def G1DListMutatorIntegerGaussian(genome, **args):
    if args["pmut"] <= 0.0: return 0
    listSize = len(genome)
    mutations = args["pmut"] * (listSize)
-   
+   range_list=genome.getParam("range_list",None)
    mu = genome.getParam("gauss_mu")
    sigma = genome.getParam("gauss_sigma")
 
    if mu is None:
       mu = Consts.CDefG1DListMutIntMU
-   
+
    if sigma is None:
       sigma = Consts.CDefG1DListMutIntSIGMA
 
@@ -264,22 +264,42 @@ def G1DListMutatorIntegerGaussian(genome, **args):
       for it in xrange(listSize):
          if Util.randomFlipCoin(args["pmut"]):
             final_value = genome[it] + int(rand_gauss(mu, sigma))
-
-            final_value = min(final_value, genome.getParam("rangemax", Consts.CDefRangeMax))
-            final_value = max(final_value, genome.getParam("rangemin", Consts.CDefRangeMin))
-
+            if range_list is None: 
+                final_value = min(final_value, genome.getParam("rangemax", Consts.CDefRangeMax))
+                final_value = max(final_value, genome.getParam("rangemin", Consts.CDefRangeMin))
+            else:
+                final_value = min(final_value, range_list[it])
+                final_value = max(final_value, 0)              
             genome[it] = final_value
             mutations += 1
    else: 
       for it in xrange(int(round(mutations))):
          which_gene = rand_randint(0, listSize-1)
          final_value = genome[which_gene] + int(rand_gauss(mu, sigma))
-
-         final_value = min(final_value, genome.getParam("rangemax", Consts.CDefRangeMax))
-         final_value = max(final_value, genome.getParam("rangemin", Consts.CDefRangeMin))
-
+         if range_list is None: 
+             final_value = min(final_value, genome.getParam("rangemax", Consts.CDefRangeMax))
+             final_value = max(final_value, genome.getParam("rangemin", Consts.CDefRangeMin))
+         else:
+             final_value = min(final_value,range_list[which_gene])
+             final_value = max(final_value, 0)
          genome[which_gene] = final_value
-
+   index=genome.getParam("index1",None)
+   margin=genome.getParam("margin",None)
+   if index!=None or margin!=None:
+       while(1):
+           sum=0
+           for i in index:
+               sum=sum+genome[i]*margin[i]
+           if sum<400000:
+               break
+           for j in index:
+               if genome[j]>0:
+                   genome[j]=genome[j]-1
+                   sum=sum-margin[j]
+                   #print genome[0:]
+                   if sum<400000:
+                       break
+   #print genome[0:]
    return int(mutations)
 
 
