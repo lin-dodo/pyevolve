@@ -37,7 +37,9 @@ from FunctionSlot import FunctionSlot
 from Statistics import Statistics
 from math import sqrt as math_sqrt
 import logging
-
+from Crypto.SelfTest.Random.test__UserFriendlyRNG import multiprocessing
+from landscape.sysinfo.processes import Processes
+import multiprocessing,sys
 try:
    from multiprocessing import cpu_count, Pool
    CPU_COUNT = cpu_count()
@@ -354,6 +356,7 @@ class GPopulation:
       self.clearFlags()
 
    def evaluate(self, **args):
+       
       """ Evaluate all individuals in population, calls the evaluate() method of individuals
    
       :param args: this params are passed to the evaluation function
@@ -362,17 +365,32 @@ class GPopulation:
       # We have multiprocessing
       if self.multiProcessing[0] and MULTI_PROCESSING:
          logging.debug("Evaluating the population using the multiprocessing method")
-         proc_pool = Pool()
+         if len(sys.argv)>1:
+            pool=multiprocessing.Pool(processes=int(sys.argv[1]))
+         else:
+            pool=multiprocessing.Pool(processes=4)
+         r=[]
+         for i in range(len(self.internalPop)):
+             
+            r.append(pool.apply_async(multiprocessing_eval,(self.internalPop[i],)))
+            #i.score=a.get()
+         for j in range(len(r)):
+            self.internalPop[j].score=r[j].get()
+             
+        
+         pool.close()
+         pool.join()
+         
 
          # Multiprocessing full_copy parameter
-         if self.multiProcessing[1]:
-            results = proc_pool.map(multiprocessing_eval_full, self.internalPop)
-            for i in xrange(len(self.internalPop)):
-               self.internalPop[i] = results[i]
-         else:
-            results = proc_pool.map(multiprocessing_eval, self.internalPop)
-            for individual, score in zip(self.internalPop, results):
-               individual.score = score
+         #if self.multiProcessing[1]:
+            #results = proc_pool.map(multiprocessing_eval_full, self.internalPop)
+            #for i in xrange(len(self.internalPop)):
+               #self.internalPop[i] = results[i]
+         #else:
+            #results = proc_pool.map(multiprocessing_eval, self.internalPop)
+            #for individual, score in zip(self.internalPop, results):
+               #individual.score = score
       else:
          for ind in self.internalPop:
             ind.evaluate(**args)
